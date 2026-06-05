@@ -13,8 +13,6 @@ const macArmCommand = document.querySelector("#macArmCommand");
 const macIntelCommand = document.querySelector("#macIntelCommand");
 const copyMacArm = document.querySelector("#copyMacArm");
 const copyMacIntel = document.querySelector("#copyMacIntel");
-const MAC_ARM_URL = "https://github.com/getdeathdone/CorporateRAG/releases/download/CorporateRAGLocal_Mac_v0.1/corporate-rag-osx-arm64.zip";
-const MAC_INTEL_URL = "https://github.com/getdeathdone/CorporateRAG/releases/download/CorporateRAGLocal_Mac_v0.1/corporate-rag-osx-x64.zip";
 
 function detectPlatform() {
   const ua = navigator.userAgent.toLowerCase();
@@ -42,8 +40,9 @@ function getBaseUrl() {
   return url.toString().replace(/\/$/, "");
 }
 
-function buildMacCommand(runtime, archiveUrl) {
+function buildMacCommand(runtime, archiveName) {
   const baseUrl = getBaseUrl();
+  const archiveUrl = `${baseUrl}/downloads/${archiveName}`;
   return `curl -fsSL "${baseUrl}/install-mac.sh" | bash -s -- "${archiveUrl}" ${runtime}`;
 }
 
@@ -108,7 +107,7 @@ checkAgain.addEventListener("click", checkAgent);
 copyMacArm.addEventListener("click", () => copyCommand(macArmCommand.textContent, copyMacArm));
 copyMacIntel.addEventListener("click", () => copyCommand(macIntelCommand.textContent, copyMacIntel));
 
-macArmCommand.textContent = buildMacCommand("osx-arm64", MAC_ARM_URL);
-macIntelCommand.textContent = buildMacCommand("osx-x64", MAC_INTEL_URL);
+macArmCommand.textContent = buildMacCommand("osx-arm64", "corporate-rag-osx-arm64.zip");
+macIntelCommand.textContent = buildMacCommand("osx-x64", "corporate-rag-osx-x64.zip");
 markRecommendedDownload();
 checkAgent();
