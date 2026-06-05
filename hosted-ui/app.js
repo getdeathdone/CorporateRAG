@@ -8,6 +8,13 @@ const checkAgain = document.querySelector("#checkAgain");
 const windowsDownload = document.querySelector("#windowsDownload");
 const macArmDownload = document.querySelector("#macArmDownload");
 const macIntelDownload = document.querySelector("#macIntelDownload");
+const macTerminalInstall = document.querySelector("#macTerminalInstall");
+const macArmCommand = document.querySelector("#macArmCommand");
+const macIntelCommand = document.querySelector("#macIntelCommand");
+const copyMacArm = document.querySelector("#copyMacArm");
+const copyMacIntel = document.querySelector("#copyMacIntel");
+const MAC_ARM_URL = "https://github.com/getdeathdone/CorporateRAG/releases/download/CorporateRAGLocal_Mac_v0.1/corporate-rag-osx-arm64.zip";
+const MAC_INTEL_URL = "https://github.com/getdeathdone/CorporateRAG/releases/download/CorporateRAGLocal_Mac_v0.1/corporate-rag-osx-x64.zip";
 
 function detectPlatform() {
   const ua = navigator.userAgent.toLowerCase();
@@ -25,6 +32,28 @@ function markRecommendedDownload() {
   windowsDownload.classList.toggle("recommended", platform === "windows");
   macArmDownload.classList.toggle("recommended", platform === "mac");
   macIntelDownload.classList.toggle("recommended", false);
+}
+
+function getBaseUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  url.pathname = url.pathname.replace(/\/[^/]*$/, "/");
+  return url.toString().replace(/\/$/, "");
+}
+
+function buildMacCommand(runtime, archiveUrl) {
+  const baseUrl = getBaseUrl();
+  return `curl -fsSL "${baseUrl}/install-mac.sh" | bash -s -- "${archiveUrl}" ${runtime}`;
+}
+
+async function copyCommand(command, button) {
+  await navigator.clipboard.writeText(command);
+  const original = button.textContent;
+  button.textContent = "Copied";
+  window.setTimeout(() => {
+    button.textContent = original;
+  }, 1200);
 }
 
 function setChecking() {
@@ -76,6 +105,10 @@ async function checkAgent() {
 }
 
 checkAgain.addEventListener("click", checkAgent);
+copyMacArm.addEventListener("click", () => copyCommand(macArmCommand.textContent, copyMacArm));
+copyMacIntel.addEventListener("click", () => copyCommand(macIntelCommand.textContent, copyMacIntel));
 
+macArmCommand.textContent = buildMacCommand("osx-arm64", MAC_ARM_URL);
+macIntelCommand.textContent = buildMacCommand("osx-x64", MAC_INTEL_URL);
 markRecommendedDownload();
 checkAgent();

@@ -75,6 +75,11 @@ h2 {
   letter-spacing: 0;
 }
 
+h3 {
+  font-size: 17px;
+  margin: 0;
+}
+
 .lead,
 .panel p,
 .download-card span,
@@ -152,6 +157,41 @@ button {
 .download-card.recommended {
   border-color: var(--accent);
   outline: 2px solid rgba(28, 107, 90, 0.12);
+}
+
+.terminal-install {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.terminal-install p {
+  color: var(--muted);
+}
+
+.command-row {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.command-row > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.command-row code {
+  background: #17211d;
+  border-radius: 6px;
+  color: #edf5f1;
+  display: block;
+  overflow-x: auto;
+  padding: 10px 12px;
+  white-space: nowrap;
 }
 
 .steps {
