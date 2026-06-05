@@ -213,22 +213,38 @@ if (-not $ollamaExe) {
 
     if ($wingetExe) {
         Write-Step "Installing Ollama with winget"
-        & $wingetExe install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+        try {
+            & $wingetExe install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+        }
+        catch {
+            Write-Warn "winget install failed."
+        }
+
         $ollamaExe = Find-OllamaExe
     }
-    else {
-        Write-Step "winget was not found. Installing Ollama with the official PowerShell script"
+
+    if (-not $ollamaExe) {
+        Write-Step "Installing Ollama with the official PowerShell script"
         try {
             Invoke-RestMethod $OllamaInstallScriptUrl | Invoke-Expression
+            $ollamaExe = Find-OllamaExe
         }
         catch {
             Write-Warn "Official PowerShell install script failed. Downloading Ollama installer directly."
+        }
+    }
+
+    if (-not $ollamaExe) {
+        try {
             $ollamaInstaller = Join-Path $DownloadsPath "OllamaSetup.exe"
             Download-File $OllamaInstallerUrl $ollamaInstaller
             Write-Step "Installing Ollama"
             Start-Process -FilePath $ollamaInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait
+            $ollamaExe = Find-OllamaExe
         }
-        $ollamaExe = Find-OllamaExe
+        catch {
+            Write-Warn "Direct Ollama installer failed."
+        }
     }
 }
 
