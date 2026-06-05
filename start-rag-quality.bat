@@ -3,6 +3,11 @@ setlocal
 
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start-rag.ps1" -Mode quality
+set "EXITCODE=%ERRORLEVEL%"
 
-echo.
-pause
+if not "%EXITCODE%"=="0" (
+  echo.
+  pause
+)
+
+exit /b %EXITCODE%

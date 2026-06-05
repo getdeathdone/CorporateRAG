@@ -59,6 +59,20 @@ function Restart-AsAdministrator {
     exit 0
 }
 
+function Invoke-WingetInstall($packageId, $name) {
+    & $wingetExe install `
+        --id $packageId `
+        --exact `
+        --silent `
+        --disable-interactivity `
+        --accept-package-agreements `
+        --accept-source-agreements
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$name winget install failed with exit code $LASTEXITCODE"
+    }
+}
+
 function Write-Step($message) {
     Write-Host ""
     Write-Host "==> $message" -ForegroundColor Cyan
@@ -241,7 +255,7 @@ if ([string]::IsNullOrWhiteSpace($dotnetVersion)) {
 
     if ($wingetExe) {
         $timer = Start-Timer "Installing .NET 8 SDK with winget"
-        & $wingetExe install --id Microsoft.DotNet.SDK.8 --exact --accept-package-agreements --accept-source-agreements
+        Invoke-WingetInstall "Microsoft.DotNet.SDK.8" ".NET SDK"
         Stop-Timer ".NET SDK installation" $timer
         $dotnetExe = Find-DotnetExe
         if ($dotnetExe) {
@@ -284,7 +298,7 @@ if (-not $ollamaExe) {
     if ($wingetExe) {
         $timer = Start-Timer "Installing Ollama with winget"
         try {
-            & $wingetExe install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+            Invoke-WingetInstall "Ollama.Ollama" "Ollama"
             Stop-Timer "Ollama winget installation" $timer
         }
         catch {
