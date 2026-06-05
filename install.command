@@ -15,6 +15,10 @@ fi
 
 chmod +x ./CorporateRag 2>/dev/null || true
 chmod +x ./start-rag-mac.sh
+if command -v codesign >/dev/null 2>&1; then
+  echo "Preparing local code signature..."
+  codesign --force --deep --sign - ./CorporateRag >/tmp/corporate-rag-codesign.log 2>&1 || true
+fi
 
 echo "Starting Corporate RAG in fast mode..."
 echo

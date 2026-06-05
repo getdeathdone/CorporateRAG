@@ -41,10 +41,34 @@ ollama pull "$EMBEDDING_MODEL"
 
 echo "==> Starting Corporate RAG"
 pkill -f "CorporateRag" >/dev/null 2>&1 || true
+if command -v xattr >/dev/null 2>&1; then
+  xattr -dr com.apple.quarantine . >/dev/null 2>&1 || true
+fi
 chmod +x ./CorporateRag 2>/dev/null || true
+if command -v codesign >/dev/null 2>&1; then
+  codesign --force --deep --sign - ./CorporateRag >/tmp/corporate-rag-codesign.log 2>&1 || true
+fi
+
+rm -f /tmp/corporate-rag-web.log
+set +e
 nohup ./CorporateRag --urls "$WEB_URL" --no-open >/tmp/corporate-rag-web.log 2>&1 &
+APP_PID=$!
+set -e
 
 for _ in $(seq 1 40); do
+  if ! kill -0 "$APP_PID" >/dev/null 2>&1; then
+    echo "!! Corporate RAG process stopped."
+    if [ -f /tmp/corporate-rag-web.log ]; then
+      echo "==> Web app log"
+      tail -n 80 /tmp/corporate-rag-web.log
+    fi
+    if [ -f /tmp/corporate-rag-codesign.log ]; then
+      echo "==> Codesign log"
+      tail -n 40 /tmp/corporate-rag-codesign.log
+    fi
+    exit 1
+  fi
+
   if curl -fsS "$WEB_URL/api/status" >/dev/null 2>&1; then
     echo "OK  Corporate RAG is running"
     open "$WEB_URL"
