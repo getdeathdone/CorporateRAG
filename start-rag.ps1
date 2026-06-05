@@ -5,6 +5,9 @@ $WebUrl = "http://localhost:5000"
 $OllamaEndpoint = "http://localhost:11434"
 $ChatModel = "llama3.1:8b"
 $EmbeddingModel = "nomic-embed-text:latest"
+$DownloadsPath = Join-Path $ProjectRoot ".setup"
+$DotnetSdkInstallerUrl = "https://aka.ms/dotnet/8.0/dotnet-sdk-win-x64.exe"
+$OllamaInstallerUrl = "https://ollama.com/download/OllamaSetup.exe"
 
 function Find-DotnetExe {
     $command = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -40,6 +43,12 @@ function Write-Ok($message) {
 
 function Write-Warn($message) {
     Write-Host "!!  $message" -ForegroundColor Yellow
+}
+
+function Download-File($url, $outputPath) {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
+    Write-Host "Downloading $url"
+    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $outputPath
 }
 
 function Find-OllamaExe {
@@ -139,9 +148,15 @@ if ([string]::IsNullOrWhiteSpace($dotnetVersion)) {
         }
     }
     else {
-        Write-Host "winget was not found. Opening the .NET SDK download page."
-        Start-Process "https://dotnet.microsoft.com/download/dotnet/8.0" | Out-Null
-        exit 1
+        Write-Step "winget was not found. Downloading .NET 8 SDK installer directly"
+        $dotnetInstaller = Join-Path $DownloadsPath "dotnet-sdk-win-x64.exe"
+        Download-File $DotnetSdkInstallerUrl $dotnetInstaller
+        Write-Step "Installing .NET 8 SDK"
+        Start-Process -FilePath $dotnetInstaller -ArgumentList @("/install", "/quiet", "/norestart") -Wait
+        $dotnetExe = Find-DotnetExe
+        if ($dotnetExe) {
+            $dotnetVersion = & $dotnetExe --version 2>$null
+        }
     }
 }
 
@@ -165,9 +180,12 @@ if (-not $ollamaExe) {
         $ollamaExe = Find-OllamaExe
     }
     else {
-        Write-Host "winget was not found. Opening the Ollama download page."
-        Start-Process "https://ollama.com/download/windows" | Out-Null
-        exit 1
+        Write-Step "winget was not found. Downloading Ollama installer directly"
+        $ollamaInstaller = Join-Path $DownloadsPath "OllamaSetup.exe"
+        Download-File $OllamaInstallerUrl $ollamaInstaller
+        Write-Step "Installing Ollama"
+        Start-Process -FilePath $ollamaInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait
+        $ollamaExe = Find-OllamaExe
     }
 }
 

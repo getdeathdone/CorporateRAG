@@ -5,6 +5,7 @@ obj/
 # Local RAG runtime data
 uploads/
 data/
+.setup/
 
 # User/local configuration
 appsettings.Development.json
