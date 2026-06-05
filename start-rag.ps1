@@ -197,6 +197,15 @@ function Test-ModelInstalled($models, $modelName) {
     return $false
 }
 
+function Invoke-OllamaPull($ollamaPath, $modelName) {
+    $command = "`"$ollamaPath`" pull $modelName"
+    cmd.exe /d /c $command
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "ollama pull failed for $modelName"
+    }
+}
+
 Set-Location $ProjectRoot
 $wingetExe = Find-WingetExe
 $isAdministrator = Test-IsAdministrator
@@ -344,7 +353,7 @@ $models = @(Get-OllamaModels)
 if (-not (Test-ModelInstalled $models $ChatModel)) {
     Write-Warn "Missing chat model: $ChatModel"
     $timer = Start-Timer "Downloading chat model $ChatModel"
-    & $ollamaExe pull $ChatModel
+    Invoke-OllamaPull $ollamaExe $ChatModel
     Stop-Timer "Chat model download" $timer
 }
 else {
@@ -355,7 +364,7 @@ $models = @(Get-OllamaModels)
 if (-not (Test-ModelInstalled $models $EmbeddingModel)) {
     Write-Warn "Missing embedding model: $EmbeddingModel"
     $timer = Start-Timer "Downloading embedding model $EmbeddingModel"
-    & $ollamaExe pull $EmbeddingModel
+    Invoke-OllamaPull $ollamaExe $EmbeddingModel
     Stop-Timer "Embedding model download" $timer
 }
 else {
