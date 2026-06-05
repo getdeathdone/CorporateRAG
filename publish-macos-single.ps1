@@ -35,6 +35,17 @@ function New-ZipFromDirectory($sourceDirectory, $archivePath) {
     }
 }
 
+function Convert-TextFileToLf($path) {
+    if (-not (Test-Path $path)) {
+        return
+    }
+
+    $text = [System.IO.File]::ReadAllText($path)
+    $text = $text -replace "`r`n", "`n"
+    $text = $text -replace "`r", "`n"
+    [System.IO.File]::WriteAllText($path, $text, [System.Text.UTF8Encoding]::new($false))
+}
+
 function Publish-MacRuntime($runtime) {
     $publishDir = Join-Path $PublishRoot $runtime
     $archivePath = Join-Path $PublishRoot "corporate-rag-$runtime.zip"
@@ -64,6 +75,8 @@ function Publish-MacRuntime($runtime) {
     Copy-Item .\start-rag-mac.sh -Destination $publishDir -Force
     Copy-Item .\install.command -Destination $publishDir -Force
     Copy-Item .\README.md -Destination $publishDir -Force
+    Convert-TextFileToLf (Join-Path $publishDir "start-rag-mac.sh")
+    Convert-TextFileToLf (Join-Path $publishDir "install.command")
 
     New-ZipFromDirectory $publishDir $archivePath
     Copy-Item $archivePath -Destination $hostedArchivePath -Force

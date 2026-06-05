@@ -66,6 +66,9 @@ if command -v xattr >/dev/null 2>&1; then
 fi
 
 echo "==> Preparing launcher"
+if command -v perl >/dev/null 2>&1; then
+  perl -pi -e 's/\r$//' "$TARGET_ROOT/install.command" "$TARGET_ROOT/start-rag-mac.sh" 2>/dev/null || true
+fi
 chmod +x "$TARGET_ROOT/install.command" 2>/dev/null || true
 chmod +x "$TARGET_ROOT/start-rag-mac.sh" 2>/dev/null || true
 chmod +x "$TARGET_ROOT/CorporateRag" 2>/dev/null || true
