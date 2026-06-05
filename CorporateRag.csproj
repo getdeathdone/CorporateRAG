@@ -18,8 +18,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove=".setup\**\*.cs" />
+    <Content Remove=".setup\**\*" />
+    <EmbeddedResource Remove=".setup\**\*" />
+    <None Remove=".setup\**\*" />
+    <EmbeddedResource Remove="wwwroot\.embedded-ui" />
+    <Content Remove="wwwroot\.embedded-ui" />
+    <None Remove="wwwroot\.embedded-ui" />
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <EmbeddedResource Include="wwwroot\**\*.*" />
   </ItemGroup>
 </Project>

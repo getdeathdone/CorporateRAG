@@ -18,15 +18,24 @@ const clearCacheButton = document.querySelector("#clearCacheButton");
 const questionInput = document.querySelector("#questionInput");
 const askButton = document.querySelector("#askButton");
 const messages = document.querySelector("#messages");
+const modelSettingsButton = document.querySelector("#modelSettingsButton");
 const dependencyModal = document.querySelector("#dependencyModal");
 const dependencySummary = document.querySelector("#dependencySummary");
 const dependencyIssues = document.querySelector("#dependencyIssues");
 const dependencyCommands = document.querySelector("#dependencyCommands");
 const dependencyClose = document.querySelector("#dependencyClose");
 const dependencyRefresh = document.querySelector("#dependencyRefresh");
+const installedModelSelect = document.querySelector("#installedModelSelect");
+const installOllamaButton = document.querySelector("#installOllamaButton");
+const useInstalledModel = document.querySelector("#useInstalledModel");
+const useFastModel = document.querySelector("#useFastModel");
+const useQualityModel = document.querySelector("#useQualityModel");
 let progressTimer = null;
 let answerTimer = null;
 let answerStartedAt = null;
+let modelPresets = [];
+let installedModels = [];
+let ollamaReachable = false;
 
 async function readJson(response) {
   const text = await response.text();
@@ -49,6 +58,9 @@ async function loadStatus() {
   const response = await fetch("/api/status");
   const data = await readJson(response);
   statusText.textContent = `Provider: ${data.provider} | Chunks: ${data.chunks}`;
+  if (data.modelSetup?.isRunning) {
+    statusText.textContent = `Provider: ${data.provider} | Model setup: ${data.modelSetup.message}`;
+  }
   chunkCount.textContent = data.chunks;
   cachedChunkCount.textContent = data.cachedChunks ?? 0;
   updateProgress(data.indexing);
@@ -177,18 +189,31 @@ function setAnswerBusy(isBusy, message) {
 async function checkDependencies(showWhenOk = false) {
   const response = await fetch("/api/dependencies");
   const data = await readJson(response);
-
-  if (data.ok && !showWhenOk) {
-    dependencyModal.classList.add("hidden");
-    return;
-  }
+  await loadModels().catch(() => {});
 
   dependencySummary.textContent = data.ok
-    ? "Everything required for the selected provider is available."
+    ? "Choose which local model this app should use."
     : "Install or download the missing items before indexing and asking questions.";
+
+  if (data.modelSetup?.isRunning) {
+    dependencySummary.textContent = data.modelSetup.currentModel
+      ? `Downloading ${data.modelSetup.currentModel}. Keep this window open.`
+      : data.modelSetup.message;
+  }
 
   dependencyIssues.innerHTML = "";
   const issues = data.issues || [];
+  if (data.modelSetup?.isRunning) {
+    const item = document.createElement("div");
+    item.className = "dependency-item active";
+    const title = document.createElement("strong");
+    title.textContent = "Model setup is running";
+    const detail = document.createElement("span");
+    detail.textContent = data.modelSetup.message;
+    item.append(title, detail);
+    dependencyIssues.append(item);
+  }
+
   if (issues.length === 0) {
     const item = document.createElement("div");
     item.className = "dependency-item";
@@ -209,6 +234,96 @@ async function checkDependencies(showWhenOk = false) {
 
   dependencyCommands.textContent = (data.commands || []).join("\n") || "No commands required.";
   dependencyModal.classList.remove("hidden");
+
+  if (data.modelSetup?.isRunning) {
+    window.setTimeout(() => {
+      checkDependencies(true).catch(() => {});
+    }, 1500);
+  }
+}
+
+async function loadModels() {
+  const response = await fetch("/api/models");
+  const data = await readJson(response);
+  modelPresets = data.presets || [];
+  installedModels = data.installedModels || [];
+  ollamaReachable = Boolean(data.ollamaReachable);
+
+  installedModelSelect.innerHTML = "";
+  const chatModels = (data.installedModels || []).filter((model) => !model.includes("embed"));
+  if (chatModels.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = data.ollamaReachable ? "No chat models installed" : "Ollama is not reachable";
+    installedModelSelect.append(option);
+  } else {
+    for (const model of chatModels) {
+      const option = document.createElement("option");
+      option.value = model;
+      option.textContent = model === data.selected?.chatModel ? `${model} (current)` : model;
+      installedModelSelect.append(option);
+    }
+  }
+
+  useInstalledModel.disabled = !installedModelSelect.value;
+  installOllamaButton.classList.toggle("hidden", ollamaReachable);
+  useFastModel.disabled = !ollamaReachable;
+  useQualityModel.disabled = !ollamaReachable;
+  updatePresetButtons();
+  return data;
+}
+
+function hasModel(model) {
+  if (!model) {
+    return false;
+  }
+
+  return installedModels.some((installed) =>
+    installed.toLowerCase() === model.toLowerCase()
+    || installed.toLowerCase() === `${model}:latest`.toLowerCase()
+    || `${installed}:latest`.toLowerCase() === model.toLowerCase());
+}
+
+function updatePresetButtons() {
+  const fast = modelPresets.find((item) => item.name === "Fast");
+  const quality = modelPresets.find((item) => item.name === "Quality");
+
+  if (fast) {
+    useFastModel.textContent = hasModel(fast.chatModel) ? "Use fast" : "Download fast";
+  }
+
+  if (quality) {
+    useQualityModel.textContent = hasModel(quality.chatModel) ? "Use quality" : "Download quality";
+  }
+}
+
+async function selectModel(chatModel, embeddingModel = "nomic-embed-text:latest") {
+  if (!chatModel) {
+    dependencySummary.textContent = "Select an installed chat model first.";
+    dependencyModal.classList.remove("hidden");
+    return;
+  }
+
+  dependencySummary.textContent = `Preparing ${chatModel}. The app will restart after setup.`;
+  dependencyModal.classList.remove("hidden");
+
+  const response = await fetch("/api/models/select", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ chatModel, embeddingModel })
+  });
+
+  const data = await readJson(response);
+  if (!response.ok) {
+    dependencySummary.textContent = getError(data, "Model selection failed");
+    return;
+  }
+
+  window.setTimeout(() => {
+    checkDependencies(true).catch(() => {});
+  }, 1000);
 }
 
 dependencyClose.addEventListener("click", () => {
@@ -220,6 +335,51 @@ dependencyRefresh.addEventListener("click", () => {
     dependencySummary.textContent = error.message;
     dependencyModal.classList.remove("hidden");
   });
+});
+
+modelSettingsButton.addEventListener("click", () => {
+  checkDependencies(true).catch((error) => {
+    dependencySummary.textContent = error.message;
+    dependencyModal.classList.remove("hidden");
+  });
+});
+
+useInstalledModel.addEventListener("click", () => {
+  selectModel(installedModelSelect.value);
+});
+
+installOllamaButton.addEventListener("click", async () => {
+  installOllamaButton.disabled = true;
+  dependencySummary.textContent = "Installing Ollama. Approve Windows prompts if shown.";
+  dependencyModal.classList.remove("hidden");
+
+  try {
+    const response = await fetch("/api/ollama/install", {
+      method: "POST"
+    });
+    const data = await readJson(response);
+    if (!response.ok) {
+      throw new Error(getError(data, "Ollama installation failed"));
+    }
+
+    window.setTimeout(() => {
+      checkDependencies(true).catch(() => {});
+    }, 1000);
+  } catch (error) {
+    dependencySummary.textContent = error.message;
+  } finally {
+    installOllamaButton.disabled = false;
+  }
+});
+
+useFastModel.addEventListener("click", () => {
+  const preset = modelPresets.find((item) => item.name === "Fast");
+  selectModel(preset?.chatModel || "llama3.2:3b", preset?.embeddingModel || "nomic-embed-text:latest");
+});
+
+useQualityModel.addEventListener("click", () => {
+  const preset = modelPresets.find((item) => item.name === "Quality");
+  selectModel(preset?.chatModel || "llama3.1:8b", preset?.embeddingModel || "nomic-embed-text:latest");
 });
 
 uploadForm.addEventListener("submit", async (event) => {
@@ -355,4 +515,4 @@ loadStatus().catch(() => {
   statusText.textContent = "Provider: unknown | Chunks: 0";
 });
 
-checkDependencies().catch(() => {});
+checkDependencies(true).catch(() => {});

@@ -6,6 +6,8 @@ obj/
 uploads/
 data/
 .setup/
+publish/
+hosted-ui/downloads/*.zip
 
 # User/local configuration
 appsettings.Development.json

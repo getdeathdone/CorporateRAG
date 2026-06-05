@@ -11,7 +11,10 @@ public sealed class SqliteRagCacheStore : IRagCacheStore
 
     public SqliteRagCacheStore()
     {
-        var dataPath = Path.Combine(Directory.GetCurrentDirectory(), "data");
+        var dataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "CorporateRag",
+            "data");
         Directory.CreateDirectory(dataPath);
         _dbPath = Path.Combine(dataPath, "rag-cache.db");
         EnsureCreated();

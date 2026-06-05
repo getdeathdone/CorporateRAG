@@ -398,7 +398,7 @@ $timer = Start-Timer "Building project"
 Stop-Timer "Project build" $timer
 
 Write-Step "Starting Corporate RAG"
-Start-Process -FilePath $dotnetExe -ArgumentList @("run", "--no-build", "--urls", $WebUrl) -WorkingDirectory $ProjectRoot -WindowStyle Hidden | Out-Null
+Start-Process -FilePath $dotnetExe -ArgumentList @("run", "--no-build", "--urls", $WebUrl, "--", "--no-open") -WorkingDirectory $ProjectRoot -WindowStyle Hidden | Out-Null
 
 if (-not (Wait-ForHttp "$WebUrl/api/status" 20)) {
     Write-Warn "The web app did not start on $WebUrl."

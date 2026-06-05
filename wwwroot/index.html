@@ -21,6 +21,18 @@
         <div class="command-title">Run in PowerShell</div>
         <pre id="dependencyCommands"></pre>
       </div>
+      <div class="model-picker">
+        <div>
+          <label for="installedModelSelect">Installed chat model</label>
+          <select id="installedModelSelect"></select>
+        </div>
+        <div class="model-actions">
+          <button id="installOllamaButton" type="button">Install Ollama</button>
+          <button id="useInstalledModel" type="button">Use selected</button>
+          <button id="useFastModel" type="button">Fast</button>
+          <button id="useQualityModel" type="button">Quality</button>
+        </div>
+      </div>
       <button id="dependencyRefresh" type="button">Check again</button>
     </section>
   </div>
@@ -75,6 +87,7 @@
           </div>
           <div id="answerState" class="progress-detail">Waiting for question</div>
         </div>
+        <button id="modelSettingsButton" class="secondary-button" type="button">Model settings</button>
         <button id="clearCacheButton" class="secondary-button" type="button">Clear cache</button>
         <div id="indexState" class="state">Waiting for PDF</div>
       </aside>

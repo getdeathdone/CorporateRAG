@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corporate RAG Setup</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="setup">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Corporate RAG Local Agent</p>
+        <h1>Local document processing on your computer</h1>
+        <p class="lead">
+          This page checks whether the local RAG Agent is running on this computer.
+          If it is available, the app opens immediately. If it is missing, download the installer for your system.
+        </p>
+      </div>
+      <div id="statusBadge" class="status checking">Checking local agent...</div>
+    </section>
+
+    <section id="readyPanel" class="panel hidden">
+      <h2>Agent is running</h2>
+      <p>The local service is available. You can open the application.</p>
+      <a class="button" href="http://localhost:5000/">Open Corporate RAG</a>
+    </section>
+
+    <section id="installPanel" class="panel hidden">
+      <h2>Install the local component</h2>
+      <p>
+        PDF processing, embeddings, local models, and cache run on the user's computer.
+        The hosted page only checks for the local agent and opens the interface.
+      </p>
+
+      <div class="downloads">
+        <a id="windowsDownload" class="download-card" href="./downloads/CorporateRag-win-x64.exe">
+          <strong>Windows</strong>
+          <span>Single EXE for Windows x64</span>
+        </a>
+        <a id="macArmDownload" class="download-card" href="./downloads/corporate-rag-osx-arm64.zip">
+          <strong>macOS Apple Silicon</strong>
+          <span>Package for M1/M2/M3/M4 Macs</span>
+        </a>
+        <a id="macIntelDownload" class="download-card" href="./downloads/corporate-rag-osx-x64.zip">
+          <strong>macOS Intel</strong>
+          <span>Package for Intel Macs</span>
+        </a>
+      </div>
+
+      <div class="steps">
+        <div><strong>1</strong><span>Download the file for your system.</span></div>
+        <div><strong>2</strong><span>Run the Windows EXE or unzip the macOS package and double-click install.command.</span></div>
+        <div><strong>3</strong><span>Wait for setup and model download to finish.</span></div>
+        <div><strong>4</strong><span>Click Check again on this page.</span></div>
+      </div>
+
+      <button id="checkAgain" type="button">Check again</button>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

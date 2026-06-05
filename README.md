@@ -61,6 +61,97 @@ Both modes use this embedding model:
 nomic-embed-text:latest
 ```
 
+## Hosted Web UI + Local Agent
+
+The project also includes a hosted landing page pattern:
+
+```text
+hosted-ui/
+```
+
+This is intended for a flow like:
+
+1. User opens a public/company website.
+2. The page checks `http://localhost:5000/api/status`.
+3. If the local agent is running, the page redirects to `http://localhost:5000`.
+4. If the local agent is missing, the page shows Windows/macOS download buttons.
+5. User downloads and runs the local package.
+6. The local package starts the agent.
+7. The hosted page detects the agent and opens the RAG app.
+
+Build downloadable packages:
+
+```powershell
+.\build-installers.ps1
+```
+
+This creates:
+
+```text
+hosted-ui\downloads\corporate-rag-windows.zip
+hosted-ui\downloads\corporate-rag-macos.zip
+```
+
+Build a Windows self-contained `.exe` package:
+
+```powershell
+.\publish-windows-exe.ps1
+```
+
+This creates:
+
+```text
+publish\windows-x64\CorporateRag.exe
+publish\corporate-rag-windows-x64.zip
+hosted-ui\downloads\corporate-rag-windows-x64.zip
+```
+
+The self-contained package does not require .NET to be installed on the target Windows machine. Ollama and the models are still required for local mode, so the included startup scripts still check/install Ollama and download the selected models.
+
+Build a one-file Windows executable:
+
+```powershell
+.\publish-windows-single-exe.ps1
+```
+
+This creates:
+
+```text
+publish\windows-x64-single\CorporateRag.exe
+hosted-ui\downloads\CorporateRag-win-x64.exe
+```
+
+This is a single self-contained application file. It does not include Ollama or local models, so local mode still requires Ollama and the selected models to be installed on the computer.
+
+Build macOS self-contained packages:
+
+```powershell
+.\publish-macos-single.ps1
+```
+
+This creates:
+
+```text
+publish\osx-arm64\CorporateRag
+publish\osx-x64\CorporateRag
+publish\corporate-rag-osx-arm64.zip
+publish\corporate-rag-osx-x64.zip
+hosted-ui\downloads\corporate-rag-osx-arm64.zip
+hosted-ui\downloads\corporate-rag-osx-x64.zip
+```
+
+Use `osx-arm64` for Apple Silicon Macs and `osx-x64` for Intel Macs. The macOS package still needs Ollama and models for local mode; `start-rag-mac.sh` checks and installs them through Homebrew when available.
+
+Host the contents of `hosted-ui/` on any static hosting provider. For example:
+
+```text
+https://rag.yourcompany.com
+```
+
+The local backend has CORS enabled for this MVP, so the hosted page can check the local agent from the browser.
+
+Important browser/security note: a website cannot silently install software on a user's computer. The user must download and run the installer/script. After that, the website can automatically detect the local agent and open the app.
+
 After startup, the browser opens:
 
 ```text
@@ -346,6 +437,34 @@ pull-ollama-model.cmd
 ```
 
 The pull helper runs `ollama pull` through `cmd.exe`, because model downloads can behave better from Command Prompt than directly from PowerShell on some machines.
+
+macOS launcher:
+
+```text
+start-rag-mac.sh
+```
+
+Run on macOS:
+
+```bash
+double-click install.command
+```
+
+If macOS blocks the file, open Terminal in the extracted folder and run:
+
+```bash
+xattr -dr com.apple.quarantine .
+chmod +x install.command
+./install.command
+```
+
+Advanced manual run:
+
+```bash
+chmod +x start-rag-mac.sh CorporateRag
+./start-rag-mac.sh fast
+./start-rag-mac.sh quality
+```
 
 ## Troubleshooting
 

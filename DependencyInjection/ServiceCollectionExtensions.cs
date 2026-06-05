@@ -17,7 +17,7 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         var aiOptions = configuration.GetSection("Ai").Get<AiOptions>()
-            ?? throw new InvalidOperationException("Missing Ai configuration section.");
+            ?? CreateDefaultAiOptions();
 
         services.Configure<AiOptions>(configuration.GetSection("Ai"));
         services.Configure<RagOptions>(configuration.GetSection("Rag"));
@@ -75,6 +75,25 @@ public static class ServiceCollectionExtensions
         }
 
         throw new InvalidOperationException("Ai:ActiveProvider must be either 'Local' or 'OpenAI'.");
+    }
+
+    private static AiOptions CreateDefaultAiOptions()
+    {
+        return new AiOptions
+        {
+            ActiveProvider = "Local",
+            Local = new LocalAiOptions
+            {
+                Endpoint = "http://localhost:11434",
+                ChatModel = "llama3.2:3b",
+                EmbeddingModel = "nomic-embed-text:latest"
+            },
+            OpenAI = new OpenAiOptions
+            {
+                ChatModel = "gpt-4o-mini",
+                EmbeddingModel = "text-embedding-3-small"
+            }
+        };
     }
 
     private static void ValidateOpenAi(OpenAiOptions options)
