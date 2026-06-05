@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Corporate RAG</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar">
+      <div>
+        <h1>Corporate RAG</h1>
+        <p id="status">Provider: loading · Chunks: 0</p>
+      </div>
+      <form id="uploadForm" class="upload">
+        <input id="pdfInput" type="file" accept="application/pdf">
+        <button id="indexButton" type="submit">Index PDF</button>
+      </form>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel">
+        <h2>Knowledge Base</h2>
+        <div class="metric">
+          <span>Indexed chunks</span>
+          <strong id="chunkCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Cached chunks</span>
+          <strong id="cachedChunkCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Last file</span>
+          <strong id="lastFile">None</strong>
+        </div>
+        <div class="progress-block">
+          <div class="progress-head">
+            <span>Indexing</span>
+            <strong id="progressPercent">0%</strong>
+          </div>
+          <div class="progress-track" aria-label="Indexing progress">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <div id="progressDetail" class="progress-detail">0 of 0 chunks</div>
+        </div>
+        <div class="answer-block">
+          <div class="answer-head">
+            <span>Answer</span>
+            <strong id="answerBadge">Idle</strong>
+          </div>
+          <div id="answerActivity" class="answer-activity">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div id="answerState" class="progress-detail">Waiting for question</div>
+        </div>
+        <button id="clearCacheButton" class="secondary-button" type="button">Clear cache</button>
+        <div id="indexState" class="state">Waiting for PDF</div>
+      </aside>
+
+      <section class="chat">
+        <div id="messages" class="messages">
+          <article class="message assistant">
+            <div class="role">Assistant</div>
+            <p>Upload a PDF, then ask a question about its content.</p>
+          </article>
+        </div>
+
+        <form id="askForm" class="composer">
+          <textarea id="questionInput" rows="2" placeholder="Ask about the indexed PDF"></textarea>
+          <button id="askButton" type="submit">Ask</button>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
