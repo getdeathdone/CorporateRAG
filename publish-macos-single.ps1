@@ -7,6 +7,34 @@ $HostedDownloads = Join-Path $ProjectRoot "hosted-ui\downloads"
 Set-Location $ProjectRoot
 New-Item -ItemType Directory -Force -Path $HostedDownloads | Out-Null
 
+function New-ZipFromDirectory($sourceDirectory, $archivePath) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    if (Test-Path $archivePath) {
+        Remove-Item $archivePath -Force
+    }
+
+    $sourceFullPath = [System.IO.Path]::GetFullPath($sourceDirectory).TrimEnd('\', '/')
+    $zip = [System.IO.Compression.ZipFile]::Open($archivePath, [System.IO.Compression.ZipArchiveMode]::Create)
+
+    try {
+        Get-ChildItem -Path $sourceFullPath -Recurse -File | ForEach-Object {
+            $fileFullPath = [System.IO.Path]::GetFullPath($_.FullName)
+            $relativePath = $fileFullPath.Substring($sourceFullPath.Length).TrimStart('\', '/')
+            $entryName = $relativePath -replace '\\', '/'
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $zip,
+                $fileFullPath,
+                $entryName,
+                [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+        }
+    }
+    finally {
+        $zip.Dispose()
+    }
+}
+
 function Publish-MacRuntime($runtime) {
     $publishDir = Join-Path $PublishRoot $runtime
     $archivePath = Join-Path $PublishRoot "corporate-rag-$runtime.zip"
@@ -37,11 +65,7 @@ function Publish-MacRuntime($runtime) {
     Copy-Item .\install.command -Destination $publishDir -Force
     Copy-Item .\README.md -Destination $publishDir -Force
 
-    if (Test-Path $archivePath) {
-        Remove-Item $archivePath -Force
-    }
-
-    Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath $archivePath -Force
+    New-ZipFromDirectory $publishDir $archivePath
     Copy-Item $archivePath -Destination $hostedArchivePath -Force
 
     Write-Host "Created macOS package:"
