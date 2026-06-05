@@ -13,6 +13,7 @@ $EmbeddingModel = "nomic-embed-text:latest"
 $DownloadsPath = Join-Path $ProjectRoot ".setup"
 $DotnetSdkInstallerUrl = "https://aka.ms/dotnet/8.0/dotnet-sdk-win-x64.exe"
 $OllamaInstallerUrl = "https://ollama.com/download/OllamaSetup.exe"
+$OllamaInstallScriptUrl = "https://ollama.com/install.ps1"
 
 function Find-DotnetExe {
     $command = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -216,11 +217,17 @@ if (-not $ollamaExe) {
         $ollamaExe = Find-OllamaExe
     }
     else {
-        Write-Step "winget was not found. Downloading Ollama installer directly"
-        $ollamaInstaller = Join-Path $DownloadsPath "OllamaSetup.exe"
-        Download-File $OllamaInstallerUrl $ollamaInstaller
-        Write-Step "Installing Ollama"
-        Start-Process -FilePath $ollamaInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait
+        Write-Step "winget was not found. Installing Ollama with the official PowerShell script"
+        try {
+            Invoke-RestMethod $OllamaInstallScriptUrl | Invoke-Expression
+        }
+        catch {
+            Write-Warn "Official PowerShell install script failed. Downloading Ollama installer directly."
+            $ollamaInstaller = Join-Path $DownloadsPath "OllamaSetup.exe"
+            Download-File $OllamaInstallerUrl $ollamaInstaller
+            Write-Step "Installing Ollama"
+            Start-Process -FilePath $ollamaInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait
+        }
         $ollamaExe = Find-OllamaExe
     }
 }
