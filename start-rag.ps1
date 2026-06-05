@@ -1,9 +1,14 @@
+param(
+    [ValidateSet("fast", "quality")]
+    [string]$Mode = "fast"
+)
+
 $ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $WebUrl = "http://localhost:5000"
 $OllamaEndpoint = "http://localhost:11434"
-$ChatModel = "llama3.1:8b"
+$ChatModel = if ($Mode -eq "quality") { "llama3.1:8b" } else { "llama3.2:3b" }
 $EmbeddingModel = "nomic-embed-text:latest"
 $DownloadsPath = Join-Path $ProjectRoot ".setup"
 $DotnetSdkInstallerUrl = "https://aka.ms/dotnet/8.0/dotnet-sdk-win-x64.exe"
@@ -48,7 +53,34 @@ function Write-Warn($message) {
 function Download-File($url, $outputPath) {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
     Write-Host "Downloading $url"
-    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $outputPath
+
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        & $curl.Source -L --fail --retry 3 --output $outputPath $url
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $outputPath)) {
+            return
+        }
+    }
+
+    try {
+        Import-Module BitsTransfer -ErrorAction Stop
+        Start-BitsTransfer -Source $url -Destination $outputPath -ErrorAction Stop
+        if (Test-Path $outputPath) {
+            return
+        }
+    }
+    catch {
+        Write-Warn "BITS download failed, falling back to PowerShell web request."
+    }
+
+    $previousProgressPreference = $ProgressPreference
+    try {
+        $ProgressPreference = "SilentlyContinue"
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $outputPath
+    }
+    finally {
+        $ProgressPreference = $previousProgressPreference
+    }
 }
 
 function Find-OllamaExe {
@@ -123,6 +155,10 @@ function Test-ModelInstalled($models, $modelName) {
 
 Set-Location $ProjectRoot
 $wingetExe = Find-WingetExe
+
+Write-Step "Selected startup mode"
+Write-Ok "Mode: $Mode"
+Write-Ok "Chat model: $ChatModel"
 
 Write-Step "Checking .NET SDK"
 $dotnetVersion = ""

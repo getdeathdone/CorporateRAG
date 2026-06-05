@@ -16,7 +16,7 @@ Switching between OpenAI and local Ollama is done in `appsettings.json`.
 - Local chat model, for example:
 
 ```powershell
-ollama pull llama3.1:8b
+ollama pull llama3.2:3b
 ```
 
 - Local embedding model:
@@ -27,15 +27,21 @@ ollama pull nomic-embed-text
 
 ## Run
 
-Recommended one-click Windows start:
+Recommended one-click Windows start with the smaller model:
 
 ```powershell
-.\start-rag.bat
+.\start-rag-fast.bat
+```
+
+Higher-quality start with a larger model:
+
+```powershell
+.\start-rag-quality.bat
 ```
 
 It checks .NET, Ollama, required models, restores packages, builds the app, starts the web server, and opens the browser.
 
-If `winget` is available, it can also install missing .NET SDK and Ollama automatically. On first run, downloading `llama3.1:8b` can take a while because the model is several GB.
+If `winget` is available, it can also install missing .NET SDK and Ollama automatically. On first run, downloading `llama3.2:3b` can take a while, but it is much smaller than the previous 8B default.
 
 Manual start:
 

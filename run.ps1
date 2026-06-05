@@ -19,7 +19,7 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($dotnetVersion)) {
 Write-Host "Using .NET SDK $dotnetVersion"
 Write-Host ""
 Write-Host "For local Ollama mode, make sure these models exist:"
-Write-Host "  ollama pull llama3.1:8b"
+Write-Host "  ollama pull llama3.2:3b"
 Write-Host "  ollama pull nomic-embed-text"
 Write-Host ""
 
