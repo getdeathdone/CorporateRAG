@@ -1,0 +1,33 @@
+# Build output
+bin/
+obj/
+
+# Local RAG runtime data
+uploads/
+data/
+
+# User/local configuration
+appsettings.Development.json
+appsettings.Local.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Test and coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
