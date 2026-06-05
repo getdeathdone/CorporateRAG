@@ -131,6 +131,13 @@ button:disabled {
   overflow: hidden;
 }
 
+.command-box summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+}
+
 .command-title {
   border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   color: #b8c9c2;
@@ -145,6 +152,99 @@ button:disabled {
   overflow: auto;
   padding: 12px;
   white-space: pre-wrap;
+}
+
+.setup-loader {
+  align-items: center;
+  background: #e6f0ec;
+  border: 1px solid #bdd5cc;
+  border-radius: 6px;
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+}
+
+.setup-loader strong,
+.setup-loader span {
+  display: block;
+}
+
+.setup-loader span {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.spinner {
+  animation: spin 800ms linear infinite;
+  border: 3px solid #bdd5cc;
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 28px;
+  width: 28px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.setup-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.setup-step {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 12px;
+}
+
+.setup-step.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(28, 107, 90, 0.1);
+}
+
+.setup-step.done {
+  background: #f5faf7;
+}
+
+.setup-step.locked {
+  opacity: 0.58;
+}
+
+.step-number {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: flex;
+  font-weight: 800;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.setup-step.active .step-number,
+.setup-step.done .step-number {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.step-body {
+  display: grid;
+  gap: 8px;
+}
+
+.step-body > span {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .model-picker {

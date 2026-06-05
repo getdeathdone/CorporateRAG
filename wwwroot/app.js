@@ -25,6 +25,15 @@ const dependencyIssues = document.querySelector("#dependencyIssues");
 const dependencyCommands = document.querySelector("#dependencyCommands");
 const dependencyClose = document.querySelector("#dependencyClose");
 const dependencyRefresh = document.querySelector("#dependencyRefresh");
+const setupLoader = document.querySelector("#setupLoader");
+const setupLoaderTitle = document.querySelector("#setupLoaderTitle");
+const setupLoaderText = document.querySelector("#setupLoaderText");
+const stepOllama = document.querySelector("#stepOllama");
+const stepModel = document.querySelector("#stepModel");
+const stepReady = document.querySelector("#stepReady");
+const stepOllamaText = document.querySelector("#stepOllamaText");
+const stepModelText = document.querySelector("#stepModelText");
+const stepReadyText = document.querySelector("#stepReadyText");
 const installedModelSelect = document.querySelector("#installedModelSelect");
 const installOllamaButton = document.querySelector("#installOllamaButton");
 const useInstalledModel = document.querySelector("#useInstalledModel");
@@ -36,6 +45,7 @@ let answerStartedAt = null;
 let modelPresets = [];
 let installedModels = [];
 let ollamaReachable = false;
+let setupBusy = false;
 
 async function readJson(response) {
   const text = await response.text();
@@ -201,6 +211,8 @@ async function checkDependencies(showWhenOk = false) {
       : data.modelSetup.message;
   }
 
+  updateSetupWizard(data);
+
   dependencyIssues.innerHTML = "";
   const issues = data.issues || [];
   if (data.modelSetup?.isRunning) {
@@ -240,6 +252,61 @@ async function checkDependencies(showWhenOk = false) {
       checkDependencies(true).catch(() => {});
     }, 1500);
   }
+}
+
+function updateSetupWizard(data) {
+  setupBusy = Boolean(data.modelSetup?.isRunning);
+  const setupMessage = data.modelSetup?.message || "Please wait.";
+  const hasChatModels = installedModels.some((model) => !model.toLowerCase().includes("embed"));
+
+  setupLoader.classList.toggle("hidden", !setupBusy);
+  setupLoaderTitle.textContent = setupBusy ? "Setup is running" : "Ready";
+  setupLoaderText.textContent = setupMessage;
+
+  dependencyClose.disabled = setupBusy;
+  dependencyRefresh.disabled = setupBusy;
+
+  stepOllama.classList.toggle("active", !ollamaReachable || setupBusy);
+  stepOllama.classList.toggle("done", ollamaReachable);
+  stepOllama.classList.toggle("locked", setupBusy && !setupMessage.toLowerCase().includes("ollama"));
+  stepOllamaText.textContent = ollamaReachable
+    ? "Ollama is installed and reachable."
+    : "Ollama is required before downloading models.";
+
+  stepModel.classList.toggle("active", ollamaReachable && !setupBusy);
+  stepModel.classList.toggle("done", ollamaReachable && hasChatModels);
+  stepModel.classList.toggle("locked", !ollamaReachable || setupBusy);
+  stepModelText.textContent = hasChatModels
+    ? "Use an installed model or download another preset."
+    : "Choose Fast for most PCs, or Quality for stronger answers.";
+
+  stepReady.classList.toggle("active", ollamaReachable && hasChatModels && !setupBusy);
+  stepReady.classList.toggle("done", ollamaReachable && hasChatModels && !setupBusy);
+  stepReady.classList.toggle("locked", !ollamaReachable || setupBusy || !hasChatModels);
+  stepReadyText.textContent = ollamaReachable && hasChatModels
+    ? "Setup is ready. Close this panel, upload a PDF, then index it."
+    : "This step unlocks after Ollama and a chat model are ready.";
+
+  installOllamaButton.disabled = setupBusy || ollamaReachable;
+  useInstalledModel.disabled = setupBusy || !ollamaReachable || !installedModelSelect.value;
+  useFastModel.disabled = setupBusy || !ollamaReachable;
+  useQualityModel.disabled = setupBusy || !ollamaReachable;
+  installedModelSelect.disabled = setupBusy || !ollamaReachable;
+}
+
+function setSetupBusy(message) {
+  setupBusy = true;
+  setupLoader.classList.remove("hidden");
+  setupLoaderTitle.textContent = "Setup is running";
+  setupLoaderText.textContent = message;
+  dependencySummary.textContent = message;
+  dependencyClose.disabled = true;
+  dependencyRefresh.disabled = true;
+  installOllamaButton.disabled = true;
+  useInstalledModel.disabled = true;
+  useFastModel.disabled = true;
+  useQualityModel.disabled = true;
+  installedModelSelect.disabled = true;
 }
 
 async function loadModels() {
@@ -298,6 +365,10 @@ function updatePresetButtons() {
 }
 
 async function selectModel(chatModel, embeddingModel = "nomic-embed-text:latest") {
+  if (setupBusy) {
+    return;
+  }
+
   if (!chatModel) {
     dependencySummary.textContent = "Select an installed chat model first.";
     dependencyModal.classList.remove("hidden");
@@ -305,6 +376,7 @@ async function selectModel(chatModel, embeddingModel = "nomic-embed-text:latest"
   }
 
   dependencySummary.textContent = `Preparing ${chatModel}. The app will restart after setup.`;
+  setSetupBusy(`Preparing ${chatModel}. The app will restart after setup.`);
   dependencyModal.classList.remove("hidden");
 
   const response = await fetch("/api/models/select", {
@@ -318,6 +390,8 @@ async function selectModel(chatModel, embeddingModel = "nomic-embed-text:latest"
   const data = await readJson(response);
   if (!response.ok) {
     dependencySummary.textContent = getError(data, "Model selection failed");
+    setupBusy = false;
+    updateSetupWizard({ modelSetup: { isRunning: false, message: dependencySummary.textContent } });
     return;
   }
 
@@ -327,6 +401,10 @@ async function selectModel(chatModel, embeddingModel = "nomic-embed-text:latest"
 }
 
 dependencyClose.addEventListener("click", () => {
+  if (setupBusy) {
+    return;
+  }
+
   dependencyModal.classList.add("hidden");
 });
 
@@ -349,8 +427,12 @@ useInstalledModel.addEventListener("click", () => {
 });
 
 installOllamaButton.addEventListener("click", async () => {
+  if (setupBusy) {
+    return;
+  }
+
   installOllamaButton.disabled = true;
-  dependencySummary.textContent = "Installing Ollama. Approve Windows prompts if shown.";
+  setSetupBusy("Installing Ollama. Approve Windows prompts if shown.");
   dependencyModal.classList.remove("hidden");
 
   try {
@@ -367,8 +449,8 @@ installOllamaButton.addEventListener("click", async () => {
     }, 1000);
   } catch (error) {
     dependencySummary.textContent = error.message;
-  } finally {
-    installOllamaButton.disabled = false;
+    setupBusy = false;
+    updateSetupWizard({ modelSetup: { isRunning: false, message: error.message } });
   }
 });
 
