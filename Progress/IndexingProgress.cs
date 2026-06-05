@@ -6,9 +6,28 @@ public sealed record IndexingProgressSnapshot(
     int Current,
     int Total,
     string Message,
-    string? Error)
+    string? Error,
+    DateTimeOffset? StartedAtUtc)
 {
     public int Percent => Total <= 0 ? 0 : Math.Clamp((int)Math.Round(Current * 100.0 / Total), 0, 100);
+    public int ElapsedSeconds => StartedAtUtc is null
+        ? 0
+        : Math.Max(0, (int)Math.Round((DateTimeOffset.UtcNow - StartedAtUtc.Value).TotalSeconds));
+
+    public int? EstimatedRemainingSeconds
+    {
+        get
+        {
+            if (!IsIndexing || Total <= 0 || Current <= 0 || StartedAtUtc is null)
+            {
+                return null;
+            }
+
+            var elapsed = Math.Max(1, (DateTimeOffset.UtcNow - StartedAtUtc.Value).TotalSeconds);
+            var secondsPerItem = elapsed / Current;
+            return Math.Max(0, (int)Math.Round((Total - Current) * secondsPerItem));
+        }
+    }
 }
 
 public interface IIndexingProgress
@@ -30,7 +49,8 @@ public sealed class IndexingProgress : IIndexingProgress
         Current: 0,
         Total: 0,
         Message: "Waiting for PDF",
-        Error: null);
+        Error: null,
+        StartedAtUtc: null);
 
     public IndexingProgressSnapshot Snapshot
     {
@@ -53,7 +73,8 @@ public sealed class IndexingProgress : IIndexingProgress
                 Current: 0,
                 Total: total,
                 Message: "Preparing chunks",
-                Error: null);
+                Error: null,
+                StartedAtUtc: DateTimeOffset.UtcNow);
         }
     }
 
@@ -67,7 +88,8 @@ public sealed class IndexingProgress : IIndexingProgress
                 Current: 0,
                 Total: 0,
                 Message: message,
-                Error: null);
+                Error: null,
+                StartedAtUtc: DateTimeOffset.UtcNow);
         }
     }
 

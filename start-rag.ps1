@@ -14,6 +14,7 @@ $DownloadsPath = Join-Path $ProjectRoot ".setup"
 $DotnetSdkInstallerUrl = "https://aka.ms/dotnet/8.0/dotnet-sdk-win-x64.exe"
 $OllamaInstallerUrl = "https://ollama.com/download/OllamaSetup.exe"
 $OllamaInstallScriptUrl = "https://ollama.com/install.ps1"
+$TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 function Find-DotnetExe {
     $command = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -38,6 +39,26 @@ function Find-WingetExe {
     return $null
 }
 
+function Test-IsAdministrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Restart-AsAdministrator {
+    Write-Warn "Administrator rights are required to install missing dependencies."
+    Write-Step "Restarting setup as administrator"
+    $argumentList = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", "`"$PSCommandPath`"",
+        "-Mode", $Mode
+    )
+
+    Start-Process -FilePath "powershell.exe" -ArgumentList $argumentList -Verb RunAs -WorkingDirectory $ProjectRoot
+    exit 0
+}
+
 function Write-Step($message) {
     Write-Host ""
     Write-Host "==> $message" -ForegroundColor Cyan
@@ -49,6 +70,28 @@ function Write-Ok($message) {
 
 function Write-Warn($message) {
     Write-Host "!!  $message" -ForegroundColor Yellow
+}
+
+function Format-Duration([TimeSpan]$duration) {
+    if ($duration.TotalHours -ge 1) {
+        return "{0}h {1}m {2}s" -f [int]$duration.TotalHours, $duration.Minutes, $duration.Seconds
+    }
+
+    if ($duration.TotalMinutes -ge 1) {
+        return "{0}m {1}s" -f [int]$duration.TotalMinutes, $duration.Seconds
+    }
+
+    return "{0}s" -f [Math]::Max(0, [int]$duration.TotalSeconds)
+}
+
+function Start-Timer($label) {
+    Write-Step $label
+    return [System.Diagnostics.Stopwatch]::StartNew()
+}
+
+function Stop-Timer($label, [System.Diagnostics.Stopwatch]$timer) {
+    $timer.Stop()
+    Write-Ok "$label took $(Format-Duration $timer.Elapsed)"
 }
 
 function Download-File($url, $outputPath) {
@@ -156,10 +199,17 @@ function Test-ModelInstalled($models, $modelName) {
 
 Set-Location $ProjectRoot
 $wingetExe = Find-WingetExe
+$isAdministrator = Test-IsAdministrator
 
 Write-Step "Selected startup mode"
 Write-Ok "Mode: $Mode"
 Write-Ok "Chat model: $ChatModel"
+if ($Mode -eq "quality") {
+    Write-Warn "Estimated first setup time: 10-45 minutes depending on model download speed."
+}
+else {
+    Write-Warn "Estimated first setup time: 5-20 minutes depending on model download speed."
+}
 
 Write-Step "Checking .NET SDK"
 $dotnetVersion = ""
@@ -176,20 +226,27 @@ catch {
 if ([string]::IsNullOrWhiteSpace($dotnetVersion)) {
     Write-Warn ".NET 8 SDK is not installed or is not visible in PATH."
 
+    if (-not $isAdministrator) {
+        Restart-AsAdministrator
+    }
+
     if ($wingetExe) {
-        Write-Step "Installing .NET 8 SDK with winget"
+        $timer = Start-Timer "Installing .NET 8 SDK with winget"
         & $wingetExe install --id Microsoft.DotNet.SDK.8 --exact --accept-package-agreements --accept-source-agreements
+        Stop-Timer ".NET SDK installation" $timer
         $dotnetExe = Find-DotnetExe
         if ($dotnetExe) {
             $dotnetVersion = & $dotnetExe --version 2>$null
         }
     }
     else {
-        Write-Step "winget was not found. Downloading .NET 8 SDK installer directly"
+        $timer = Start-Timer "winget was not found. Downloading .NET 8 SDK installer directly"
         $dotnetInstaller = Join-Path $DownloadsPath "dotnet-sdk-win-x64.exe"
         Download-File $DotnetSdkInstallerUrl $dotnetInstaller
-        Write-Step "Installing .NET 8 SDK"
+        Stop-Timer ".NET SDK download" $timer
+        $timer = Start-Timer "Installing .NET 8 SDK"
         Start-Process -FilePath $dotnetInstaller -ArgumentList @("/install", "/quiet", "/norestart") -Wait
+        Stop-Timer ".NET SDK installation" $timer
         $dotnetExe = Find-DotnetExe
         if ($dotnetExe) {
             $dotnetVersion = & $dotnetExe --version 2>$null
@@ -211,12 +268,18 @@ $ollamaExe = Find-OllamaExe
 if (-not $ollamaExe) {
     Write-Warn "Ollama is not installed or is not visible in PATH."
 
+    if (-not $isAdministrator) {
+        Restart-AsAdministrator
+    }
+
     if ($wingetExe) {
-        Write-Step "Installing Ollama with winget"
+        $timer = Start-Timer "Installing Ollama with winget"
         try {
             & $wingetExe install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+            Stop-Timer "Ollama winget installation" $timer
         }
         catch {
+            $timer.Stop()
             Write-Warn "winget install failed."
         }
 
@@ -224,22 +287,27 @@ if (-not $ollamaExe) {
     }
 
     if (-not $ollamaExe) {
-        Write-Step "Installing Ollama with the official PowerShell script"
+        $timer = Start-Timer "Installing Ollama with the official PowerShell script"
         try {
             Invoke-RestMethod $OllamaInstallScriptUrl | Invoke-Expression
+            Stop-Timer "Ollama PowerShell installation" $timer
             $ollamaExe = Find-OllamaExe
         }
         catch {
+            $timer.Stop()
             Write-Warn "Official PowerShell install script failed. Downloading Ollama installer directly."
         }
     }
 
     if (-not $ollamaExe) {
         try {
+            $timer = Start-Timer "Downloading Ollama installer"
             $ollamaInstaller = Join-Path $DownloadsPath "OllamaSetup.exe"
             Download-File $OllamaInstallerUrl $ollamaInstaller
-            Write-Step "Installing Ollama"
+            Stop-Timer "Ollama installer download" $timer
+            $timer = Start-Timer "Installing Ollama"
             Start-Process -FilePath $ollamaInstaller -ArgumentList @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") -Wait
+            Stop-Timer "Ollama installer run" $timer
             $ollamaExe = Find-OllamaExe
         }
         catch {
@@ -275,7 +343,9 @@ $models = @(Get-OllamaModels)
 
 if (-not (Test-ModelInstalled $models $ChatModel)) {
     Write-Warn "Missing chat model: $ChatModel"
+    $timer = Start-Timer "Downloading chat model $ChatModel"
     & $ollamaExe pull $ChatModel
+    Stop-Timer "Chat model download" $timer
 }
 else {
     Write-Ok "Chat model installed: $ChatModel"
@@ -284,7 +354,9 @@ else {
 $models = @(Get-OllamaModels)
 if (-not (Test-ModelInstalled $models $EmbeddingModel)) {
     Write-Warn "Missing embedding model: $EmbeddingModel"
+    $timer = Start-Timer "Downloading embedding model $EmbeddingModel"
     & $ollamaExe pull $EmbeddingModel
+    Stop-Timer "Embedding model download" $timer
 }
 else {
     Write-Ok "Embedding model installed: $EmbeddingModel"
@@ -294,8 +366,13 @@ Write-Step "Restoring and building project"
 Get-Process CorporateRag -ErrorAction SilentlyContinue | Stop-Process -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
+$timer = Start-Timer "Restoring NuGet packages"
 & $dotnetExe restore
+Stop-Timer "NuGet restore" $timer
+
+$timer = Start-Timer "Building project"
 & $dotnetExe build --no-restore
+Stop-Timer "Project build" $timer
 
 Write-Step "Starting Corporate RAG"
 Start-Process -FilePath $dotnetExe -ArgumentList @("run", "--no-build", "--urls", $WebUrl) -WorkingDirectory $ProjectRoot -WindowStyle Hidden | Out-Null
@@ -307,6 +384,7 @@ if (-not (Wait-ForHttp "$WebUrl/api/status" 20)) {
 }
 
 Write-Ok "Corporate RAG is running"
+Write-Ok "Total startup time: $(Format-Duration $TotalStopwatch.Elapsed)"
 Write-Host ""
 Write-Host "Opening $WebUrl"
 Start-Process $WebUrl | Out-Null

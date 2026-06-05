@@ -6,6 +6,7 @@ const indexState = document.querySelector("#indexState");
 const progressPercent = document.querySelector("#progressPercent");
 const progressFill = document.querySelector("#progressFill");
 const progressDetail = document.querySelector("#progressDetail");
+const progressTime = document.querySelector("#progressTime");
 const answerBadge = document.querySelector("#answerBadge");
 const answerActivity = document.querySelector("#answerActivity");
 const answerState = document.querySelector("#answerState");
@@ -24,6 +25,8 @@ const dependencyCommands = document.querySelector("#dependencyCommands");
 const dependencyClose = document.querySelector("#dependencyClose");
 const dependencyRefresh = document.querySelector("#dependencyRefresh");
 let progressTimer = null;
+let answerTimer = null;
+let answerStartedAt = null;
 
 async function readJson(response) {
   const text = await response.text();
@@ -65,11 +68,29 @@ function updateProgress(indexing) {
   progressFill.style.width = `${percent}%`;
   progressDetail.textContent = `${current} of ${total} chunks`;
 
+  const elapsed = formatDuration(indexing.elapsedSeconds ?? 0);
+  const remaining = indexing.estimatedRemainingSeconds;
+  progressTime.textContent = remaining === null || remaining === undefined
+    ? `Elapsed: ${elapsed}`
+    : `Elapsed: ${elapsed} | ETA: ${formatDuration(remaining)}`;
+
   if (indexing.fileName) {
     lastFile.textContent = indexing.fileName;
   }
 
   setState(indexing.message || "Waiting for PDF", Boolean(indexing.error));
+}
+
+function formatDuration(totalSeconds) {
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+
+  if (minutes <= 0) {
+    return `${rest}s`;
+  }
+
+  return `${minutes}m ${rest}s`;
 }
 
 function startProgressPolling() {
@@ -136,6 +157,21 @@ function setAnswerBusy(isBusy, message) {
   answerActivity.classList.toggle("active", isBusy);
   answerState.textContent = message;
   askButton.textContent = isBusy ? "Thinking..." : "Ask";
+
+  if (isBusy) {
+    answerStartedAt = Date.now();
+    if (answerTimer) {
+      window.clearInterval(answerTimer);
+    }
+
+    answerTimer = window.setInterval(() => {
+      const elapsed = Math.round((Date.now() - answerStartedAt) / 1000);
+      answerState.textContent = `${message} | Elapsed: ${formatDuration(elapsed)}`;
+    }, 500);
+  } else if (answerTimer) {
+    window.clearInterval(answerTimer);
+    answerTimer = null;
+  }
 }
 
 async function checkDependencies(showWhenOk = false) {
@@ -203,6 +239,7 @@ uploadForm.addEventListener("submit", async (event) => {
   progressPercent.textContent = "0%";
   progressFill.style.width = "0%";
   progressDetail.textContent = "Preparing chunks";
+  progressTime.textContent = "Elapsed: 0s";
   startProgressPolling();
 
   try {
@@ -250,6 +287,7 @@ clearCacheButton.addEventListener("click", async () => {
     progressPercent.textContent = "0%";
     progressFill.style.width = "0%";
     progressDetail.textContent = "0 of 0 chunks";
+    progressTime.textContent = "Elapsed: 0s";
     lastFile.textContent = "None";
     setState("Cache cleared");
     addMessage("assistant", "Cache cleared. Upload and index a PDF to rebuild the knowledge base.");
@@ -275,6 +313,7 @@ askForm.addEventListener("submit", async (event) => {
   askButton.disabled = true;
   setAnswerBusy(true, "Retrieving chunks and generating answer");
   const thinkingMessage = addThinkingMessage();
+  const requestStartedAt = Date.now();
 
   try {
     const response = await fetch("/api/ask", {
@@ -292,7 +331,8 @@ askForm.addEventListener("submit", async (event) => {
 
     thinkingMessage.remove();
     addMessage("assistant", data.answer);
-    setAnswerBusy(false, "Answer complete");
+    const elapsed = Math.round((Date.now() - requestStartedAt) / 1000);
+    setAnswerBusy(false, `Answer complete | Took: ${formatDuration(elapsed)}`);
     await loadStatus();
   } catch (error) {
     thinkingMessage.remove();
