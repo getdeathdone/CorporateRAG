@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+  <div id="dependencyModal" class="modal-backdrop hidden">
+    <section class="modal">
+      <div class="modal-head">
+        <div>
+          <h2>Setup required</h2>
+          <p id="dependencySummary">Some local AI dependencies are missing.</p>
+        </div>
+        <button id="dependencyClose" class="icon-button" type="button" aria-label="Close">x</button>
+      </div>
+      <div id="dependencyIssues" class="dependency-list"></div>
+      <div class="command-box">
+        <div class="command-title">Run in PowerShell</div>
+        <pre id="dependencyCommands"></pre>
+      </div>
+      <button id="dependencyRefresh" type="button">Check again</button>
+    </section>
+  </div>
+
   <main class="shell">
     <section class="topbar">
       <div>

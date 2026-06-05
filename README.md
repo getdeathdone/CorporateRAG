@@ -27,6 +27,18 @@ ollama pull nomic-embed-text
 
 ## Run
 
+Recommended one-click Windows start:
+
+```powershell
+.\start-rag.bat
+```
+
+It checks .NET, Ollama, required models, restores packages, builds the app, starts the web server, and opens the browser.
+
+If `winget` is available, it can also install missing .NET SDK and Ollama automatically. On first run, downloading `llama3.1:8b` can take a while because the model is several GB.
+
+Manual start:
+
 ```powershell
 dotnet restore
 dotnet run

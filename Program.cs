@@ -32,6 +32,93 @@ app.MapGet("/api/status", (
     });
 });
 
+app.MapGet("/api/dependencies", async (IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    var provider = configuration["Ai:ActiveProvider"] ?? "Unknown";
+    var issues = new List<DependencyIssue>();
+    var commands = new List<string>();
+
+    if (provider.Equals("Local", StringComparison.OrdinalIgnoreCase))
+    {
+        var endpoint = configuration["Ai:Local:Endpoint"] ?? "http://localhost:11434";
+        var chatModel = configuration["Ai:Local:ChatModel"] ?? "";
+        var embeddingModel = configuration["Ai:Local:EmbeddingModel"] ?? "";
+
+        try
+        {
+            using var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(3)
+            };
+
+            var tagsJson = await httpClient.GetStringAsync($"{endpoint.TrimEnd('/')}/api/tags", cancellationToken);
+            var installedModels = ReadOllamaModels(tagsJson);
+
+            if (!ModelExists(installedModels, chatModel))
+            {
+                issues.Add(new DependencyIssue(
+                    "Missing chat model",
+                    $"Ollama model '{chatModel}' is not installed. Answers will not work."));
+                commands.Add($"ollama pull {chatModel}");
+            }
+
+            if (!ModelExists(installedModels, embeddingModel))
+            {
+                issues.Add(new DependencyIssue(
+                    "Missing embedding model",
+                    $"Ollama model '{embeddingModel}' is not installed. PDF indexing will not work."));
+                commands.Add($"ollama pull {embeddingModel}");
+            }
+
+            return Results.Ok(new
+            {
+                ok = issues.Count == 0,
+                provider,
+                endpoint,
+                installedModels,
+                issues,
+                commands = commands.Distinct().ToArray()
+            });
+        }
+        catch
+        {
+            issues.Add(new DependencyIssue(
+                "Ollama is not reachable",
+                $"Local provider is selected, but Ollama does not answer at {endpoint}."));
+            commands.Add("Install Ollama from https://ollama.com/download/windows");
+            commands.Add("ollama serve");
+            commands.Add($"ollama pull {chatModel}");
+            commands.Add($"ollama pull {embeddingModel}");
+
+            return Results.Ok(new
+            {
+                ok = false,
+                provider,
+                endpoint,
+                installedModels = Array.Empty<string>(),
+                issues,
+                commands = commands.Where(command => !string.IsNullOrWhiteSpace(command)).Distinct().ToArray()
+            });
+        }
+    }
+
+    if (provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+        && string.IsNullOrWhiteSpace(configuration["Ai:OpenAI:ApiKey"]))
+    {
+        issues.Add(new DependencyIssue(
+            "Missing OpenAI API key",
+            "OpenAI provider is selected, but Ai:OpenAI:ApiKey is empty."));
+    }
+
+    return Results.Ok(new
+    {
+        ok = issues.Count == 0,
+        provider,
+        issues,
+        commands
+    });
+});
+
 app.MapPost("/api/index", async (
     IFormFile file,
     IRagService rag,
@@ -136,4 +223,34 @@ static string ToClientMessage(Exception exception)
     return message;
 }
 
+static string[] ReadOllamaModels(string tagsJson)
+{
+    using var document = System.Text.Json.JsonDocument.Parse(tagsJson);
+    if (!document.RootElement.TryGetProperty("models", out var models))
+    {
+        return [];
+    }
+
+    return models
+        .EnumerateArray()
+        .Select(model => model.TryGetProperty("name", out var name) ? name.GetString() : null)
+        .Where(name => !string.IsNullOrWhiteSpace(name))
+        .Select(name => name!)
+        .ToArray();
+}
+
+static bool ModelExists(IEnumerable<string> installedModels, string requiredModel)
+{
+    if (string.IsNullOrWhiteSpace(requiredModel))
+    {
+        return false;
+    }
+
+    return installedModels.Any(model =>
+        model.Equals(requiredModel, StringComparison.OrdinalIgnoreCase)
+        || model.Equals($"{requiredModel}:latest", StringComparison.OrdinalIgnoreCase)
+        || requiredModel.Equals($"{model}:latest", StringComparison.OrdinalIgnoreCase));
+}
+
 public sealed record AskRequest(string Question);
+public sealed record DependencyIssue(string Title, string Detail);

@@ -17,6 +17,12 @@ const clearCacheButton = document.querySelector("#clearCacheButton");
 const questionInput = document.querySelector("#questionInput");
 const askButton = document.querySelector("#askButton");
 const messages = document.querySelector("#messages");
+const dependencyModal = document.querySelector("#dependencyModal");
+const dependencySummary = document.querySelector("#dependencySummary");
+const dependencyIssues = document.querySelector("#dependencyIssues");
+const dependencyCommands = document.querySelector("#dependencyCommands");
+const dependencyClose = document.querySelector("#dependencyClose");
+const dependencyRefresh = document.querySelector("#dependencyRefresh");
 let progressTimer = null;
 
 async function readJson(response) {
@@ -131,6 +137,54 @@ function setAnswerBusy(isBusy, message) {
   answerState.textContent = message;
   askButton.textContent = isBusy ? "Thinking..." : "Ask";
 }
+
+async function checkDependencies(showWhenOk = false) {
+  const response = await fetch("/api/dependencies");
+  const data = await readJson(response);
+
+  if (data.ok && !showWhenOk) {
+    dependencyModal.classList.add("hidden");
+    return;
+  }
+
+  dependencySummary.textContent = data.ok
+    ? "Everything required for the selected provider is available."
+    : "Install or download the missing items before indexing and asking questions.";
+
+  dependencyIssues.innerHTML = "";
+  const issues = data.issues || [];
+  if (issues.length === 0) {
+    const item = document.createElement("div");
+    item.className = "dependency-item";
+    item.innerHTML = "<strong>Ready</strong><span>No missing dependencies found.</span>";
+    dependencyIssues.append(item);
+  } else {
+    for (const issue of issues) {
+      const item = document.createElement("div");
+      item.className = "dependency-item";
+      const title = document.createElement("strong");
+      title.textContent = issue.title;
+      const detail = document.createElement("span");
+      detail.textContent = issue.detail;
+      item.append(title, detail);
+      dependencyIssues.append(item);
+    }
+  }
+
+  dependencyCommands.textContent = (data.commands || []).join("\n") || "No commands required.";
+  dependencyModal.classList.remove("hidden");
+}
+
+dependencyClose.addEventListener("click", () => {
+  dependencyModal.classList.add("hidden");
+});
+
+dependencyRefresh.addEventListener("click", () => {
+  checkDependencies(true).catch((error) => {
+    dependencySummary.textContent = error.message;
+    dependencyModal.classList.remove("hidden");
+  });
+});
 
 uploadForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -260,3 +314,5 @@ questionInput.addEventListener("keydown", (event) => {
 loadStatus().catch(() => {
   statusText.textContent = "Provider: unknown | Chunks: 0";
 });
+
+checkDependencies().catch(() => {});
