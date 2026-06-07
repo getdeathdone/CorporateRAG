@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Embeddings;
+using Microsoft.SemanticKernel.Text;
 
 namespace CorporateRag.Rag;
 
@@ -104,7 +105,29 @@ public sealed class RagService : IRagService
             history,
             cancellationToken: cancellationToken);
 
-        return response.Content ?? "";
+        return ReadResponseText(response);
+    }
+
+    private static string ReadResponseText(ChatMessageContent response)
+    {
+        var content = response.Content;
+        if (!string.IsNullOrWhiteSpace(content) && content.Length > 1)
+        {
+            return content;
+        }
+
+        var itemText = string.Concat(response.Items.Select(item => item switch
+        {
+            TextContent textContent => textContent.Text,
+            _ => item.ToString()
+        }));
+
+        if (!string.IsNullOrWhiteSpace(itemText))
+        {
+            return itemText;
+        }
+
+        return response.ToString();
     }
 
     private static IReadOnlyList<RagChunk> ChunkText(
