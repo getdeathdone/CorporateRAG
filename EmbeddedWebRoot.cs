@@ -6,7 +6,8 @@ public static class EmbeddedWebRoot
 {
     public static string EnsureExtracted(string contentRootPath)
     {
-        var webRootPath = Path.Combine(contentRootPath, "wwwroot");
+        var versionKey = GetExtractionVersionKey();
+        var webRootPath = Path.Combine(contentRootPath, "wwwroot", versionKey);
 
         Directory.CreateDirectory(webRootPath);
 
@@ -34,6 +35,17 @@ public static class EmbeddedWebRoot
         File.WriteAllText(Path.Combine(webRootPath, ".embedded-ui"), DateTimeOffset.UtcNow.ToString("O"));
 
         return webRootPath;
+    }
+
+    private static string GetExtractionVersionKey()
+    {
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath) && File.Exists(processPath))
+        {
+            return $"embedded-{File.GetLastWriteTimeUtc(processPath).Ticks}";
+        }
+
+        return $"embedded-{Assembly.GetExecutingAssembly().GetName().Version}";
     }
 
     private static string ToOutputPath(string webRootPath, string relativeName)

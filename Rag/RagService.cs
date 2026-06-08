@@ -9,6 +9,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Embeddings;
 using Microsoft.SemanticKernel.Text;
+using System.Text;
 
 namespace CorporateRag.Rag;
 
@@ -100,6 +101,19 @@ public sealed class RagService : IRagService
             Question:
             {question}
             """);
+
+        var streamedAnswer = new StringBuilder();
+        await foreach (var chunk in _chatService.GetStreamingChatMessageContentsAsync(
+                           history,
+                           cancellationToken: cancellationToken))
+        {
+            streamedAnswer.Append(chunk.Content);
+        }
+
+        if (streamedAnswer.Length > 0)
+        {
+            return streamedAnswer.ToString();
+        }
 
         var response = await _chatService.GetChatMessageContentAsync(
             history,
