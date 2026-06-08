@@ -20,6 +20,21 @@
       <div id="statusBadge" class="status checking">Checking local agent...</div>
     </section>
 
+    <section class="developer-card" aria-labelledby="developerTitle">
+      <div class="developer-main">
+        <div class="developer-avatar" aria-hidden="true">NS</div>
+        <div>
+          <p class="developer-kicker" id="developerTitle">Developer</p>
+          <h2>Nikita Shamrai</h2>
+        </div>
+      </div>
+      <div class="developer-links" aria-label="Developer contacts">
+        <a href="https://github.com/getdeathdone" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://www.linkedin.com/in/jolynike/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        <a href="mailto:jolynike@gmail.com">Email</a>
+      </div>
+    </section>
+
     <section id="readyPanel" class="panel hidden">
       <h2>Agent is running</h2>
       <p>The local service is available. You can open the application.</p>
@@ -48,6 +63,18 @@
         </a>
       </div>
 
+      <div id="windowsCommandInstall" class="terminal-install">
+        <h3>Windows Command Prompt install</h3>
+        <p>Copy this line into Command Prompt. It downloads the Windows EXE and starts it automatically.</p>
+        <div class="command-row">
+          <div>
+            <strong>Windows x64</strong>
+            <code id="windowsCommand"></code>
+          </div>
+          <button id="copyWindowsCommand" type="button">Copy</button>
+        </div>
+      </div>
+
       <div id="macTerminalInstall" class="terminal-install">
         <h3>Recommended macOS install</h3>
         <p>Copy one command into Terminal. It downloads, unlocks, and starts the Mac package automatically.</p>
@@ -68,28 +95,13 @@
       </div>
 
       <div class="steps">
-        <div><strong>1</strong><span>Download the file for your system.</span></div>
-        <div><strong>2</strong><span>Run the Windows EXE, or on macOS paste the Terminal command above.</span></div>
+        <div><strong>1</strong><span>Download the file for your system or paste the command for your platform.</span></div>
+        <div><strong>2</strong><span>Windows starts the EXE automatically. On macOS, paste the Terminal command above.</span></div>
         <div><strong>3</strong><span>Wait for setup and model download to finish.</span></div>
         <div><strong>4</strong><span>Click Check again on this page.</span></div>
       </div>
 
       <button id="checkAgain" type="button">Check again</button>
-    </section>
-
-    <section class="developer-card" aria-labelledby="developerTitle">
-      <div class="developer-main">
-        <div class="developer-avatar" aria-hidden="true">NS</div>
-        <div>
-          <p class="developer-kicker" id="developerTitle">Developer</p>
-          <h2>Nikita Shamrai</h2>
-        </div>
-      </div>
-      <div class="developer-links" aria-label="Developer contacts">
-        <a href="https://github.com/getdeathdone" target="_blank" rel="noopener noreferrer">GitHub</a>
-        <a href="https://www.linkedin.com/in/jolynike/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-        <a href="mailto:jolynike@gmail.com">Email</a>
-      </div>
     </section>
   </main>
 

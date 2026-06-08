@@ -8,6 +8,8 @@ const checkAgain = document.querySelector("#checkAgain");
 const windowsDownload = document.querySelector("#windowsDownload");
 const macArmDownload = document.querySelector("#macArmDownload");
 const macIntelDownload = document.querySelector("#macIntelDownload");
+const windowsCommand = document.querySelector("#windowsCommand");
+const copyWindowsCommand = document.querySelector("#copyWindowsCommand");
 const macTerminalInstall = document.querySelector("#macTerminalInstall");
 const macArmCommand = document.querySelector("#macArmCommand");
 const macIntelCommand = document.querySelector("#macIntelCommand");
@@ -44,6 +46,12 @@ function buildMacCommand(runtime, archiveName) {
   const baseUrl = getBaseUrl();
   const archiveUrl = `${baseUrl}/downloads/${archiveName}`;
   return `curl -fsSL "${baseUrl}/install-mac.sh" | bash -s -- "${archiveUrl}" ${runtime}`;
+}
+
+function buildWindowsCommand() {
+  const baseUrl = getBaseUrl();
+  const exeUrl = `${baseUrl}/downloads/CorporateRag-win-x64.exe`;
+  return `curl.exe -L --fail -o "%TEMP%\\CorporateRag-win-x64.exe" "${exeUrl}" && start "" "%TEMP%\\CorporateRag-win-x64.exe"`;
 }
 
 async function copyCommand(command, button) {
@@ -104,9 +112,11 @@ async function checkAgent() {
 }
 
 checkAgain.addEventListener("click", checkAgent);
+copyWindowsCommand.addEventListener("click", () => copyCommand(windowsCommand.textContent, copyWindowsCommand));
 copyMacArm.addEventListener("click", () => copyCommand(macArmCommand.textContent, copyMacArm));
 copyMacIntel.addEventListener("click", () => copyCommand(macIntelCommand.textContent, copyMacIntel));
 
+windowsCommand.textContent = buildWindowsCommand();
 macArmCommand.textContent = buildMacCommand("osx-arm64", "corporate-rag-osx-arm64.zip");
 macIntelCommand.textContent = buildMacCommand("osx-x64", "corporate-rag-osx-x64.zip");
 markRecommendedDownload();
