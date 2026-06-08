@@ -34,7 +34,8 @@ body {
 }
 
 .hero,
-.panel {
+.panel,
+.about-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -290,12 +291,33 @@ button {
   border-color: var(--accent);
 }
 
+.about-card {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.about-kicker {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.about-card p:last-child {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 @media (max-width: 720px) {
   .setup {
     padding: 14px;
   }
 
-  .hero {
+  .hero,
+  .about-card {
     grid-template-columns: 1fr;
   }
 
