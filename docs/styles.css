@@ -218,52 +218,76 @@ button {
 }
 
 .developer-card {
+  align-items: center;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
-  display: grid;
-  gap: 12px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
   padding: 18px 20px;
+}
+
+.developer-main {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.developer-avatar {
+  align-items: center;
+  background: #e6f0ec;
+  border: 1px solid #bdd5cc;
+  border-radius: 8px;
+  color: var(--accent);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.developer-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+  text-transform: uppercase;
 }
 
 .developer-card h2 {
   font-size: 18px;
-}
-
-.developer-card dl {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.developer-card dl div {
-  align-items: baseline;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: 90px minmax(0, 1fr);
-}
-
-.developer-card dt {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.developer-card dd {
-  margin: 0;
-  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.developer-card a {
+.developer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.developer-links a {
+  background: var(--surface-2, #eef3f1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
   color: var(--accent);
+  display: inline-flex;
+  font-size: 13px;
   font-weight: 700;
+  min-height: 34px;
+  padding: 7px 12px;
   text-decoration: none;
 }
 
-.developer-card a:hover {
-  text-decoration: underline;
+.developer-links a:hover {
+  background: #e6f0ec;
+  border-color: var(--accent);
 }
 
 @media (max-width: 720px) {
@@ -279,8 +303,12 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .developer-card dl div {
-    gap: 4px;
-    grid-template-columns: 1fr;
+  .developer-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .developer-links {
+    justify-content: flex-start;
   }
 }
