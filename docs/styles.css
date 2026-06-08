@@ -217,6 +217,55 @@ button {
   width: 28px;
 }
 
+.developer-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.developer-card h2 {
+  font-size: 18px;
+}
+
+.developer-card dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.developer-card dl div {
+  align-items: baseline;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 90px minmax(0, 1fr);
+}
+
+.developer-card dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.developer-card dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.developer-card a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.developer-card a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 720px) {
   .setup {
     padding: 14px;
@@ -227,6 +276,11 @@ button {
   }
 
   .downloads {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-card dl div {
+    gap: 4px;
     grid-template-columns: 1fr;
   }
 }
