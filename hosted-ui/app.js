@@ -1,5 +1,6 @@
 const LOCAL_AGENT_URL = "http://localhost:5000";
 const STATUS_URL = `${LOCAL_AGENT_URL}/api/status`;
+const HOSTED_BASE_URL = "https://getdeathdone.github.io/CorporateRAG";
 
 const statusBadge = document.querySelector("#statusBadge");
 const readyPanel = document.querySelector("#readyPanel");
@@ -36,6 +37,10 @@ function markRecommendedDownload() {
 
 function getBaseUrl() {
   const url = new URL(window.location.href);
+  if (url.protocol === "file:") {
+    return HOSTED_BASE_URL;
+  }
+
   url.hash = "";
   url.search = "";
   url.pathname = url.pathname.replace(/\/[^/]*$/, "/");
@@ -55,7 +60,22 @@ function buildWindowsCommand() {
 }
 
 async function copyCommand(command, button) {
-  await navigator.clipboard.writeText(command);
+  const text = command.trim();
+
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  }
+
   const original = button.textContent;
   button.textContent = "Copied";
   window.setTimeout(() => {
