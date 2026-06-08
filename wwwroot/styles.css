@@ -328,7 +328,8 @@ h2 {
 .topbar p,
 .state,
 .metric span,
-.role {
+.role,
+.developer-chip span {
   color: var(--muted);
 }
 
@@ -336,6 +337,55 @@ h2 {
   align-items: center;
   display: flex;
   gap: 10px;
+}
+
+.developer-chip {
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  flex: 0 1 auto;
+  gap: 14px;
+  padding: 10px 12px;
+}
+
+.developer-chip > div {
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+}
+
+.developer-chip span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.developer-chip strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.developer-chip nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.developer-chip a {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 8px;
+  text-decoration: none;
+}
+
+.developer-chip a:hover {
+  border-color: var(--accent);
 }
 
 input[type="file"] {
@@ -579,6 +629,11 @@ input[type="file"]:focus {
 
   .topbar,
   .upload {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .developer-chip {
     align-items: stretch;
     flex-direction: column;
   }
