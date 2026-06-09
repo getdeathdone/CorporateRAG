@@ -5,11 +5,7 @@ using CorporateRag.Pdf;
 using CorporateRag.Progress;
 using CorporateRag.Vector;
 using Microsoft.Extensions.Options;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Embeddings;
-using Microsoft.SemanticKernel.Text;
-using System.Text;
 
 namespace CorporateRag.Rag;
 
@@ -17,7 +13,7 @@ public sealed class RagService : IRagService
 {
     private readonly IPdfTextExtractor _pdfTextExtractor;
     private readonly ITextEmbeddingGenerationService _embeddingService;
-    private readonly IChatCompletionService _chatService;
+    private readonly IChatAnswerGenerator _answerGenerator;
     private readonly IInMemoryVectorDatabase _vectorDatabase;
     private readonly IIndexingProgress _progress;
     private readonly RagOptions _options;
@@ -25,14 +21,14 @@ public sealed class RagService : IRagService
     public RagService(
         IPdfTextExtractor pdfTextExtractor,
         ITextEmbeddingGenerationService embeddingService,
-        IChatCompletionService chatService,
+        IChatAnswerGenerator answerGenerator,
         IInMemoryVectorDatabase vectorDatabase,
         IIndexingProgress progress,
         IOptions<RagOptions> options)
     {
         _pdfTextExtractor = pdfTextExtractor;
         _embeddingService = embeddingService;
-        _chatService = chatService;
+        _answerGenerator = answerGenerator;
         _vectorDatabase = vectorDatabase;
         _progress = progress;
         _options = options.Value;
@@ -86,62 +82,22 @@ public sealed class RagService : IRagService
             hits.Select(hit =>
                 $"Source: {hit.Chunk.Source}; chunk: {hit.Chunk.Index}; score: {hit.Score:F3}{Environment.NewLine}{hit.Chunk.Text}"));
 
-        var history = new ChatHistory();
-        history.AddSystemMessage("""
+        const string systemPrompt = """
             You are a corporate RAG assistant.
             Answer only from the provided context.
             If the context is insufficient, say that the knowledge base does not contain enough information.
             Keep the answer concise and cite chunk numbers when useful.
-            """);
+            """;
 
-        history.AddUserMessage($"""
+        var userPrompt = $"""
             Context:
             {context}
 
             Question:
             {question}
-            """);
+            """;
 
-        var streamedAnswer = new StringBuilder();
-        await foreach (var chunk in _chatService.GetStreamingChatMessageContentsAsync(
-                           history,
-                           cancellationToken: cancellationToken))
-        {
-            streamedAnswer.Append(chunk.Content);
-        }
-
-        if (streamedAnswer.Length > 0)
-        {
-            return streamedAnswer.ToString();
-        }
-
-        var response = await _chatService.GetChatMessageContentAsync(
-            history,
-            cancellationToken: cancellationToken);
-
-        return ReadResponseText(response);
-    }
-
-    private static string ReadResponseText(ChatMessageContent response)
-    {
-        var content = response.Content;
-        if (!string.IsNullOrWhiteSpace(content) && content.Length > 1)
-        {
-            return content;
-        }
-
-        var itemText = string.Concat(response.Items.Select(item => item switch
-        {
-            TextContent textContent => textContent.Text,
-            _ => item.ToString()
-        }));
-
-        if (!string.IsNullOrWhiteSpace(itemText))
-        {
-            return itemText;
-        }
-
-        return response.ToString();
+        return await _answerGenerator.GenerateAnswerAsync(systemPrompt, userPrompt, cancellationToken);
     }
 
     private static IReadOnlyList<RagChunk> ChunkText(

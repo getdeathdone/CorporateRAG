@@ -20,6 +20,12 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args,
     ContentRootPath = appDataRoot
 });
+var configuredUrls = ReadArgumentValue(args, "--urls");
+if (!string.IsNullOrWhiteSpace(configuredUrls))
+{
+    builder.WebHost.UseUrls(configuredUrls);
+}
+
 builder.Configuration.AddJsonFile(userSettingsPath, optional: true, reloadOnChange: false);
 var shouldOpenBrowser = !args.Any(arg => arg.Equals("--no-open", StringComparison.OrdinalIgnoreCase));
 var modelSetup = new ModelSetupState();
@@ -426,6 +432,27 @@ static string ToClientMessage(Exception exception)
     }
 
     return message;
+}
+
+static string? ReadArgumentValue(string[] args, string name)
+{
+    for (var index = 0; index < args.Length; index++)
+    {
+        var arg = args[index];
+        if (arg.Equals(name, StringComparison.OrdinalIgnoreCase)
+            && index + 1 < args.Length)
+        {
+            return args[index + 1];
+        }
+
+        var prefix = $"{name}=";
+        if (arg.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return arg[prefix.Length..];
+        }
+    }
+
+    return null;
 }
 
 static string[] ReadOllamaModels(string tagsJson)

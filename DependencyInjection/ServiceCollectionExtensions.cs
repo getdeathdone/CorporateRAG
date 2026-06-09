@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RagOptions>(configuration.GetSection("Rag"));
 
         RegisterAiServices(services, aiOptions);
+        RegisterAnswerGenerator(services, aiOptions);
 
         services.AddSingleton<IPdfTextExtractor, PdfPigTextExtractor>();
         services.AddSingleton<IIndexingProgress, IndexingProgress>();
@@ -75,6 +76,19 @@ public static class ServiceCollectionExtensions
         }
 
         throw new InvalidOperationException("Ai:ActiveProvider must be either 'Local' or 'OpenAI'.");
+    }
+
+    private static void RegisterAnswerGenerator(IServiceCollection services, AiOptions aiOptions)
+    {
+        if (aiOptions.ActiveProvider.Equals("Local", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<OllamaChatAnswerGenerator>();
+            services.AddSingleton<IChatAnswerGenerator>(serviceProvider =>
+                serviceProvider.GetRequiredService<OllamaChatAnswerGenerator>());
+            return;
+        }
+
+        services.AddSingleton<IChatAnswerGenerator, SemanticKernelChatAnswerGenerator>();
     }
 
     private static AiOptions CreateDefaultAiOptions()
