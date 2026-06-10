@@ -232,8 +232,10 @@ During answer generation the UI shows:
 Indexed chunks and embeddings are persisted in SQLite:
 
 ```text
-D:\_AI\RAG\data\rag-cache.db
+<project-root>\data\rag-cache.db
 ```
+
+`<project-root>` means the root folder where this project is located.
 
 On application startup, the app loads this cache into memory. This means already indexed documents can be used after restarting the app.
 
@@ -245,7 +247,7 @@ The `Clear cache` button clears:
 Uploaded PDF files are stored in:
 
 ```text
-D:\_AI\RAG\uploads
+<project-root>\uploads
 ```
 
 Both `data/` and `uploads/` are ignored by git.
